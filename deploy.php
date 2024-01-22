@@ -7,7 +7,7 @@ require 'contrib/slack.php';
 /** Config */
 set('keep_releases', 3);
 set('slack_success_text', 'Deploy to *{{target}}* successful. Visit {{url}}/wp/wp-admin.');
-set('web_root', 'www');
+set('web_root', 'web');
 set('sage/public_dir', 'public');
 
 /** Shared files */
