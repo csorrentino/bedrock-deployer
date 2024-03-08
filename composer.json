@@ -1,5 +1,5 @@
 {
-    "name": "tombroucke/otomaties-deployer",
+    "name": "csorrentino/bedrock-deployer",
     "description": "Deploy Bedrock & Sage",
     "type": "library",
     "authors": [
