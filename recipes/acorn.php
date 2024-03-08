@@ -21,3 +21,14 @@ task('acorn:fetch_google_fonts', function () {
         }
     );
 });
+
+/** Run Acorn Commands */
+desc('Run Acorn Commands');
+task('acorn:optimize', function () {
+    within(
+        '{{release_path}}',
+        function () {
+            run('{{bin/wp_cli}} acorn optimize');
+        }
+    );
+});
