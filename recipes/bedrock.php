@@ -1,6 +1,13 @@
 <?php
 namespace Deployer;
 
+/** Install sage composer dependencies */
+desc('Runs composer install on remote server');
+task('bedrock:vendors', function () {
+    run('cd {{release_path}} && {{bin/composer}} install {{composer_options}}');
+});
+
+
 desc('Makes sure, .env file for Bedrock is available');
 task('bedrock:create_env', function () {
 
@@ -26,9 +33,9 @@ task('bedrock:create_env', function () {
             'LOGGED_IN_SALT',
             'NONCE_SALT',
         ];
-    
+
         writeln('<comment>Generating .env file</comment>');
-    
+
         // Ask for credentials
         $dbName = ask(get('stage') . ' DB_NAME');
         $dbUser = ask(get('stage') . ' DB_USER');
@@ -39,9 +46,9 @@ task('bedrock:create_env', function () {
             'staging' => 'staging',
             'production' => 'production',
         ], 'production');
-    
+
         ob_start();
-    
+
         echo <<<EOL
         DB_NAME='{$dbName}'
         DB_USER='{$dbUser}'
@@ -50,29 +57,29 @@ task('bedrock:create_env', function () {
         # Optionally, you can use a data source name (DSN)
         # When using a DSN, you can remove the DB_NAME, DB_USER, DB_PASSWORD, and DB_HOST variables
         # DATABASE_URL='mysql://root:root@database_host:database_port/local'
-        
+
         # Optional database variables
         DB_HOST='{$dbHost}'
         # DB_PREFIX='wp_'
-        
+
         WP_ENV='{$wpEnv}'
         WP_HOME='{$url}'
         WP_SITEURL='{$url}/wp'
 
         # Specify optional debug.log path
         # WP_DEBUG_LOG='/path/to/debug.log'
-        
+
         # Generate your keys here: https://roots.io/salts.html
         EOL;
-    
+
         echo PHP_EOL;
 
         foreach ($salt_keys as $key) {
             echo $key . "='" . generate_salt() . "'" . PHP_EOL;
         }
-    
+
         $content = ob_get_clean();
-    
+
         run("echo \"${content}\" > ${deployPath}/shared/.env");
     } else {
         writeln('<comment>.env file already exists</comment>');
