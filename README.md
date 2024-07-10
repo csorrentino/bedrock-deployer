@@ -27,14 +27,6 @@ $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
 require 'vendor/tombroucke/otomaties-deployer/deploy.php';
-require 'vendor/tombroucke/otomaties-deployer/recipes/acorn.php';
-require 'vendor/tombroucke/otomaties-deployer/recipes/auth.php';
-require 'vendor/tombroucke/otomaties-deployer/recipes/bedrock.php';
-require 'vendor/tombroucke/otomaties-deployer/recipes/cleanup.php';
-require 'vendor/tombroucke/otomaties-deployer/recipes/otomaties.php';
-require 'vendor/tombroucke/otomaties-deployer/recipes/sage.php';
-require 'vendor/tombroucke/otomaties-deployer/recipes/woocommerce.php';
-
 
 /** Config */
 set('application', '');
