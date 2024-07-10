@@ -46,12 +46,12 @@ task('otomaties:security_headers', function () {
 function appendToHtaccess($filepath)
 {
     $deployPath = get('deploy_path');
-    $htaccessPath = "{$deployPath}/shared/www/.htaccess";
+    $htaccessPath = "{$deployPath}/shared/web/.htaccess";
     $content = PHP_EOL . '# Otomaties deployer: ' . $filepath . PHP_EOL;
 
     $content .= file_get_contents(dirname(__DIR__) . '/' . $filepath);
 
-    if (!test("grep -q {$filepath} {$deployPath}/shared/www/.htaccess")) {
+    if (!test("grep -q {$filepath} {$deployPath}/shared/web/.htaccess")) {
         createFileIfNotExists($htaccessPath);
         // Append content to .htaccess
         $slashedContent = addcslashes($content, '"`$\\');
