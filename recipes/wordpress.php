@@ -1,7 +1,7 @@
 <?php
 namespace Deployer;
 
-/** Clear cache */
+/** Check Wordpress Installation - clear cache */
 desc('Check WordPress Installation');
 task('wordpress:check_installation', function () {
     within(
@@ -23,4 +23,10 @@ task('wordpress:clear_cache', function () {
             run('{{bin/wp_cli}} cache flush');
         }
     );
+});
+
+/** Set admin email address */
+desc('Set administration email address');
+task('wordpress:set_admin_email', function () {
+    runWpQuery('wordpress/admin-email');
 });
