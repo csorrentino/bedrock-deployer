@@ -1,8 +1,13 @@
 <?php
 namespace Deployer;
 
-require 'recipe/composer.php';
-require 'contrib/slack.php';
+require_once 'contrib/slack.php';
+require_once 'functions.php';
+
+// require all files in recipes
+foreach (glob(__DIR__ . '/recipes/*.php') as $filename) {
+    require_once $filename;
+}
 
 /** Config */
 set('keep_releases', 2);
@@ -10,6 +15,7 @@ set('slack_success_text', 'Deploy to *{{target}}* successful. Visit {{url}}/wp/w
 set('web_root', 'web');
 set('sage/public_dir', 'public');
 set('bin/wp_cli', 'wp');
+set('db_prefix', 'wp_');
 
 /** Shared files */
 add('shared_files', [
@@ -24,13 +30,9 @@ add('shared_files', [
 
 /** Shared directories */
 add('shared_dirs', [
-    get('web_root') . '/app/blogs.dir',
     get('web_root') . '/app/ewww',
     get('web_root') . '/app/fonts',
-    get('web_root') . '/app/languages/wpml',
     get('web_root') . '/app/uploads',
-    get('web_root') . '/app/wflogs',
-    get('web_root') . '/app/wp-rocket-config',
 ]);
 
 /** Writable directories */
