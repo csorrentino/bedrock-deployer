@@ -26,14 +26,43 @@ require_once __DIR__ . '/vendor/autoload.php';
 $dotenv = \Dotenv\Dotenv::createImmutable(__DIR__);
 $dotenv->load();
 
-require 'vendor/tombroucke/otomaties-deployer/deploy.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/acorn.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/bedrock.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/cleanup.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/composer.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/sage.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/wordpress.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/woocommerce.php';
 
 /** Config */
-set('application', '');
-set('repository', '');
+set('keep_releases', 2);
+set('web_root', 'web');
+set('bin/wp_cli', 'wp');
+set('db_prefix', 'wp_');
+set('application', ''); // default blank
+set('repository', 'git@bitbucket.org:username/repo.git');
 set('sage/theme_path', get('web_root') . '/app/themes/themename');
 set('sage/build_command', 'build --clean --flush'); // build --clean for bud, build:production for webpack mix
 set('sage/public_dir', 'public'); // public for bud, dist for webpack mix
+
+/** Shared files */
+add('shared_files', [
+    '.env',
+    'auth.json',
+    get('web_root') . '/.htaccess',
+    get('web_root') . '/app/object-cache.php',
+    get('web_root') . '/app/wp-cache-config.php',
+]);
+
+/** Shared directories */
+add('shared_dirs', [
+    get('web_root') . '/app/ewww',
+    get('web_root') . '/app/fonts',
+    get('web_root') . '/app/uploads',
+]);
+
+/** Writable directories */
+add('writable_dirs', []);
 
 /** Hosts */
 host('production')
@@ -52,32 +81,17 @@ host('staging')
     ->set('branch', 'staging')
     ->set('deploy_path', '/data/sites/web/examplebe/app/staging');
 
-/** Notify deploy started */
-before('deploy', 'slack:notify');
-
 /** Install theme dependencies */
 after('deploy:vendors', 'sage:vendors');
 
 /** Push theme assets */
 after('deploy:update_code', 'sage:compile_and_upload_assets');
 
-/** Write revision to file */
-after('deploy:update_code', 'otomaties:write_revision_to_file');
-
-/** Cache ACF fields */
-after('deploy:symlink', 'acorn:acf_cache');
-
 /** Remove unused themes */
 after('deploy:cleanup', 'cleanup:unused_themes');
 
-/** Notify success */
-after('deploy:success', 'slack:notify:success');
-
 /** Unlock deploy */
 after('deploy:failed', 'deploy:unlock');
-
-/** Notify failure */
-after('deploy:failed', 'slack:notify:failure');
 ```
 ## WooCommerce
 ```php
@@ -93,12 +107,6 @@ after('deploy:symlink', 'wordpress:clear_cache');
 
 ## Extra commands
 
-### Enable basic auth on host:
-
-```bash
-dep auth:password_protect_stage staging
-```
-
 ### Create bedrock .env file
 
 ```bash
@@ -110,12 +118,4 @@ dep bedrock:create_env staging
 
 ```bash
 dep composer:add_remote_repository_authentication
-```
-
-### Add .htaccess rules for security
-
-
-```bash
-dep otomaties:htaccess_rules
-
 ```
