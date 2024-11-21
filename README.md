@@ -15,6 +15,17 @@
 composer require csorrentino/bedrock-deployer --dev
 ```
 
+Tip: Add an alias to your shell config (eg. `.bashrc`,`.zshrc`)
+
+`alias dep='vendor/bin/dep'`
+
+This allows you to use `dep` instead of the full path for deployments
+
+## Deploy
+```
+dep deploy (hostname eg. staging)
+```
+
 ## Example deploy.php file
 
 ```php
@@ -92,6 +103,18 @@ after('deploy:cleanup', 'cleanup:unused_themes');
 
 /** Unlock deploy */
 after('deploy:failed', 'deploy:unlock');
+
+/** Copy auth.json */
+before('deploy:vendors', 'bedrock:upload_auth_json');
+
+/** Deploy */
+desc('Deploys your project');
+task('deploy', [
+    'deploy:prepare',
+    'deploy:vendors',
+    'deploy:publish',
+]);
+
 ```
 ## WooCommerce
 ```php
@@ -101,7 +124,7 @@ after('deploy:symlink', 'woocommerce:update_database');
 
 ## WordPress cache
 ```php
-/** Update WooCommerce tables */
+/** Clear Wordpress Cache */
 after('deploy:symlink', 'wordpress:clear_cache');
 ```
 
@@ -114,7 +137,6 @@ dep bedrock:create_env staging
 ```
 
 ### Add repository authentication to remote server
-
 
 ```bash
 dep composer:add_remote_repository_authentication
