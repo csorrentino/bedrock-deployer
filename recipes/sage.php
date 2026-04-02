@@ -10,7 +10,7 @@ task('sage:vendors', function () {
 /** Build & copy sage assets */
 desc('Compiles the theme locally for production');
 task('sage:compile', function () {
-    runLocally('cd {{sage/theme_path}} && yarn && yarn {{sage/build_command}}');
+    runLocally('cd {{sage/theme_path}} && npm ci && npm run {{sage/build_command}}');
 });
 
 desc('Updates remote assets with local assets, but without deleting previous assets on destination');
