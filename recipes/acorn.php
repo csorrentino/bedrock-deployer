@@ -32,3 +32,13 @@ task('acorn:optimize', function () {
         }
     );
 });
+
+desc('Cache Acorn blade icons');
+task('acorn:icons_cache', function () {
+    within(
+        '{{release_path}}',
+        function () {
+            run('{{bin/wp_cli}} acorn icons:cache');
+        }
+    );
+});

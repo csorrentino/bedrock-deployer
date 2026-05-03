@@ -116,6 +116,98 @@ task('deploy', [
 ]);
 
 ```
+## Radicle
+
+For [Roots Radicle](https://roots.io/radicle/) projects, use `radicle.php` instead of `sage.php`. The key differences are `web_root=public`, Radicle-specific shared paths, and post-deploy Acorn tasks.
+
+```php
+<?php
+namespace Deployer;
+
+require_once __DIR__ . '/vendor/autoload.php';
+
+$dotenv = \Dotenv\Dotenv::createImmutable(__DIR__);
+$dotenv->load();
+
+require 'vendor/csorrentino/bedrock-deployer/recipes/acorn.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/bedrock.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/cleanup.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/composer.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/radicle.php';
+require 'vendor/csorrentino/bedrock-deployer/recipes/wordpress.php';
+
+/** Config */
+set('keep_releases', 2);
+set('web_root', 'public');
+set('bin/wp_cli', 'wp');
+set('repository', 'git@github.com:username/repo.git');
+
+/** Shared files */
+add('shared_files', [
+    '.env',
+    'auth.json',
+    'public/.htaccess',
+    'public/content/object-cache.php',
+    'public/content/wp-cache-config.php',
+]);
+
+/** Shared directories */
+add('shared_dirs', [
+    'public/content/uploads',
+    'public/content/fonts',
+    'storage/logs',
+]);
+
+/** Writable directories */
+add('writable_dirs', []);
+
+/** Hosts */
+host('production')
+    ->set('hostname', 'ssh###.webhosting.be')
+    ->set('url', 'https://example.com')
+    ->set('remote_user', 'username')
+    ->set('branch', 'main')
+    ->set('deploy_path', '/data/sites/web/example/app/main');
+
+host('staging')
+    ->set('hostname', 'ssh###.webhosting.be')
+    ->set('url', 'https://staging.example.com')
+    ->set('basic_auth_user', $_SERVER['BASIC_AUTH_USER'] ?? '')
+    ->set('basic_auth_pass', $_SERVER['BASIC_AUTH_PASS'] ?? '')
+    ->set('remote_user', 'username')
+    ->set('branch', 'staging')
+    ->set('deploy_path', '/data/sites/web/example/app/staging');
+
+/** Copy auth.json */
+before('deploy:vendors', 'bedrock:upload_auth_json');
+
+/** Build Radicle assets locally and upload */
+after('deploy:update_code', 'radicle:compile_and_upload_build');
+
+/** Run Acorn optimizations */
+after('deploy:symlink', 'acorn:optimize');
+after('deploy:symlink', 'acorn:icons_cache');
+
+/** Clear WordPress cache */
+after('deploy:symlink', 'wordpress:clear_cache');
+
+/** Remove unused themes */
+after('deploy:cleanup', 'cleanup:unused_themes');
+
+/** Unlock deploy */
+after('deploy:failed', 'deploy:unlock');
+
+/** Deploy */
+desc('Deploys your project');
+task('deploy', [
+    'deploy:prepare',
+    'deploy:vendors',
+    'deploy:publish',
+]);
+```
+
+Optional add-ons work the same as for Bedrock + Sage: `acorn:fetch_google_fonts`, `runcloud-hub:*`, and `woocommerce:update_database` can all be included if needed.
+
 ## WooCommerce
 ```php
 /** Update WooCommerce tables */
