@@ -267,6 +267,39 @@ after('deploy:symlink', 'woocommerce:update_database');
 after('deploy:symlink', 'wordpress:clear_cache');
 ```
 
+## RunCloud Hub
+
+For sites behind [RunCloud](https://runcloud.io/) Hub caching, purge the page cache and refresh the object-cache dropin once the new release is live:
+
+```php
+require 'vendor/csorrentino/bedrock-deployer/recipes/runcloud-hub.php';
+
+/** Purge RunCloud Hub caches */
+after('deploy:symlink', 'runcloud-hub:update-dropin');
+after('runcloud-hub:update-dropin', 'runcloud-hub:purgeall');
+```
+
+Both tasks run through `{{bin/wp_cli}}`. The `wp runcloud-hub` command only exists while the RunCloud Hub plugin is active, so each task skips with a warning when it is missing rather than failing a deploy that has already gone live; a command that runs and then fails still fails the deploy.
+
+### Opcode cache
+
+`runcloud-hub:purgeall` clears the page cache (Redis / nginx FastCGI), not PHP's opcache — and with Deployer you usually don't need to clear opcache at all, because every release lives at a new path. It only matters when the server has `opcache.validate_timestamps=0`. Check before adding anything:
+
+```bash
+php -i | grep -E 'opcache.enable|validate_timestamps|revalidate_freq'
+```
+
+If timestamp validation is off, add Deployer's cachetool recipe and point it at the site's PHP-FPM socket (`ls /var/run/*.sock` on the server shows the name):
+
+```php
+require 'contrib/cachetool.php';
+
+set('cachetool_args', '--fcgi=/var/run/php-fpm-<appname>.sock');
+after('deploy:symlink', 'cachetool:clear:opcache');
+```
+
+Prefer the FPM socket over `--web=...`: the web adapter clears the cache by writing a temporary PHP file into the web root and requesting it over HTTP, which briefly exposes an executable endpoint on every deploy.
+
 ## Extra commands
 
 ### Create bedrock .env file
