@@ -313,6 +313,29 @@ task('verify:vendors', function () {
 */
 
 /**
+ * Quote a remote path for the shell without killing a leading ~.
+ *
+ * deploy_path is often written as ~/webapps/site, and escapeshellarg() would
+ * quote the tilde along with the rest, leaving the shell looking for a
+ * directory literally named "~". Quoting everything after the tilde keeps the
+ * expansion while still protecting spaces and metacharacters in the path.
+ */
+if (! function_exists(__NAMESPACE__.'\\verify_quote_remote_path')) {
+    function verify_quote_remote_path(string $path): string
+    {
+        if ($path === '~') {
+            return '~';
+        }
+
+        if (strpos($path, '~/') === 0) {
+            return '~/'.escapeshellarg(substr($path, 2));
+        }
+
+        return escapeshellarg($path);
+    }
+}
+
+/**
  * Find Composer sources that need credentials.
  *
  * @param string[] $paths Directory paths that each contain a composer.json
@@ -461,12 +484,14 @@ task('verify:composer_auth', function () {
     ];
 
     foreach ($authLocations as $label => $authPath) {
-        if (! test("[ -s {$authPath} ]")) {
+        $quotedPath = verify_quote_remote_path($authPath);
+
+        if (! test("[ -s {$quotedPath} ]")) {
             continue;
         }
 
         $keys = trim(run(
-            "grep -o '{$keyPattern}' ".escapeshellarg($authPath).' 2>/dev/null | sort -u || true'
+            "grep -o '{$keyPattern}' {$quotedPath} 2>/dev/null | sort -u || true"
         ));
 
         if ($keys === '') {
