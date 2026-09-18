@@ -281,6 +281,30 @@ after('runcloud-hub:update-dropin', 'runcloud-hub:purgeall');
 
 Both tasks run through `{{bin/wp_cli}}`. The `wp runcloud-hub` command only exists while the RunCloud Hub plugin is active, so each task skips with a warning when it is missing rather than failing a deploy that has already gone live; a command that runs and then fails still fails the deploy.
 
+### Pin the PHP binary
+
+RunCloud keeps each PHP build under `/RunCloud/Packages/`, and the account default `php` on `PATH` is often an older one than the version serving the site. The bare `wp` and `composer` shims use that default, so a site whose `vendor/` was built for 8.3 dies on Composer's platform check:
+
+```
+PHP Fatal error: Composer detected issues in your platform: Your Composer
+dependencies require a PHP version ">= 8.3.0". You are running 8.2.32.
+```
+
+Point both binaries at the same build (`ls -d /RunCloud/Packages/php*` lists what is installed):
+
+```php
+set('php_version', '83');
+set('bin/php', '/RunCloud/Packages/php{{php_version}}rc/bin/php');
+set('bin/composer', '{{bin/php}} /usr/sbin/composer');
+set('bin/wp_cli', '{{bin/php}} $(command -v wp)');
+
+/** Fail before deploying rather than after the symlink */
+set('php/min_version', '8.3');
+after('deploy:setup', 'verify:php');
+```
+
+`wp cli has-command` does not boot WordPress, so a mismatch stays invisible until a task actually loads the site — after `deploy:symlink` for the RunCloud Hub tasks. `verify:php` checks `{{bin/php}}` against `php/min_version` up front, which turns that into a pre-flight failure.
+
 ### Opcode cache
 
 `runcloud-hub:purgeall` clears the page cache (Redis / nginx FastCGI), not PHP's opcache — and with Deployer you usually don't need to clear opcache at all, because every release lives at a new path. It only matters when the server has `opcache.validate_timestamps=0`. Check before adding anything:
