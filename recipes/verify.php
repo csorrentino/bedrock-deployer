@@ -263,13 +263,14 @@ task('verify:php', function () {
 /** Confirm Composer actually installed something */
 desc('Confirm Composer actually installed something');
 task('verify:vendors', function () {
-    $autoload = '{{release_or_current_path}}/vendor/autoload.php';
+    $root = verify_release_or_current_path();
+    $autoload = $root.'/vendor/autoload.php';
 
     if (! test("[ -f {$autoload} ]")) {
         throw new \RuntimeException(
             "Composer reported success but {$autoload} does not exist.\n"
             .'Run the install by hand to see what it did: '
-            .parse('cd {{release_or_current_path}} && {{bin/composer}} install -v')
+            .parse("cd {$root} && {{bin/composer}} install -v")
         );
     }
 
@@ -281,7 +282,7 @@ task('verify:vendors', function () {
         return;
     }
 
-    $themeRoot = '{{release_or_current_path}}/'.$themePath;
+    $themeRoot = $root.'/'.$themePath;
     $themeComposerJson = $themeRoot.'/composer.json';
 
     if (! test("[ -f {$themeComposerJson} ]")) {
@@ -320,6 +321,26 @@ task('verify:vendors', function () {
  * directory literally named "~". Quoting everything after the tilde keeps the
  * expansion while still protecting spaces and metacharacters in the path.
  */
+/*
+| Deployer caches a config value the first time a task reads it. Reading
+| {{release_path}} (or {{release_or_current_path}}) before deploy:release —
+| for example in a pre-flight check while a failed deploy left a stale
+| "release" symlink — pins every later task to that old release. The new
+| release stays empty and can end up as "current". Read the symlink fresh.
+*/
+if (! function_exists(__NAMESPACE__.'\\verify_release_or_current_path')) {
+    function verify_release_or_current_path(): string
+    {
+        if (! test('[ -h {{deploy_path}}/release ]')) {
+            return parse('{{current_path}}');
+        }
+
+        $link = run('readlink {{deploy_path}}/release');
+
+        return substr($link, 0, 1) === '/' ? $link : parse('{{deploy_path}}').'/'.$link;
+    }
+}
+
 if (! function_exists(__NAMESPACE__.'\\verify_quote_remote_path')) {
     function verify_quote_remote_path(string $path): string
     {
@@ -469,7 +490,7 @@ task('verify:composer_auth', function () {
 
     $privateSources = verify_private_sources($paths);
 
-    $releaseAuth = parse('{{release_or_current_path}}/auth.json');
+    $releaseAuth = verify_release_or_current_path().'/auth.json';
     $sharedAuth = parse('{{deploy_path}}/shared/auth.json');
     $binComposer = parse('{{bin/composer}}');
 

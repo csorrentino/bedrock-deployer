@@ -10,6 +10,20 @@ if (!has('local_env_file')) {
     });
 }
 
+/*
+| Deployer caches {{release_path}} the first time a task reads it. If any task
+| read it before deploy:release (while a failed deploy left a stale "release"
+| symlink), every later task would build into that old release. Point
+| release_path at the release deploy:release just created.
+*/
+desc('Point release_path at the release deploy:release created');
+task('bedrock:sync_release_path', function () {
+    $link = run('readlink {{deploy_path}}/release');
+    set('release_path', substr($link, 0, 1) === '/' ? $link : get('deploy_path').'/'.$link);
+})->hidden();
+
+after('deploy:release', 'bedrock:sync_release_path');
+
 /** Install sage composer dependencies */
 desc('Runs composer install on remote server');
 task('bedrock:vendors', function () {
