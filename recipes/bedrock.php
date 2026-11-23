@@ -137,9 +137,42 @@ desc('Upload auth.json to remote');
 task('bedrock:upload_auth_json', function () {
     $authJsonPath = 'auth.json';
 
-    if (file_exists($authJsonPath)) {
-        upload($authJsonPath, '{{release_path}}/auth.json');
+    if (!file_exists($authJsonPath)) {
+        return;
     }
+
+    // When auth.json is a shared file, the release copy is a symlink to
+    // shared/auth.json. Uploading to the release path replaces that symlink
+    // with a plain file and leaves shared/auth.json stale, so write to shared.
+    if (!in_array('auth.json', get('shared_files', []), true)) {
+        upload($authJsonPath, '{{release_path}}/auth.json');
+
+        return;
+    }
+
+    $remotePath = '{{deploy_path}}/shared/auth.json';
+    $localHash = hash_file('sha256', $authJsonPath);
+    $remoteHash = trim(run(
+        "if [ -f {$remotePath} ]; then sha256sum {$remotePath} 2>/dev/null || shasum -a 256 {$remotePath}; fi | cut -d' ' -f1"
+    ));
+
+    if ($remoteHash === $localHash) {
+        info('shared/auth.json is already up to date.');
+
+        return;
+    }
+
+    run('mkdir -p {{deploy_path}}/shared');
+
+    // Keep the previous credentials so a bad auth.json can be restored by hand.
+    if ($remoteHash !== '') {
+        run("cp {$remotePath} {$remotePath}.bak-" . date('Ymd-His'));
+    }
+
+    upload($authJsonPath, $remotePath);
+    run("chmod 600 {$remotePath}");
+
+    info("Uploaded {$authJsonPath} -> {$remotePath} (mode 600)");
 });
 
 if (!function_exists(__NAMESPACE__ . '\\bedrock_env_escape')) {

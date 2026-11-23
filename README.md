@@ -376,6 +376,14 @@ dep verify:composer_auth staging
 before('deploy:vendors', 'verify:composer_auth');
 ```
 
+### Upload auth.json
+
+```php
+before('deploy:vendors', 'bedrock:upload_auth_json');
+```
+
+`bedrock:upload_auth_json` uploads the local `auth.json`. When `auth.json` is in `shared_files`, it writes `{{deploy_path}}/shared/auth.json` (mode 600), so every release uses the new credentials. It skips the upload when the server copy is identical, and saves the old copy as `shared/auth.json.bak-<timestamp>` before it replaces it. The local file replaces the server file completely, so keep every credential the server needs in the local `auth.json`. When `auth.json` is not a shared file, it uploads to `{{release_path}}/auth.json` as before.
+
 ### Add repository authentication to remote server
 
 ```bash
